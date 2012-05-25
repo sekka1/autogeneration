@@ -1,0 +1,72 @@
+project --topLevelPackage io.algorithms.entity --projectName entity --packaging jar
+
+dependency add --groupId com.amazonaws --artifactId aws-java-sdk --version 1.3.6
+
+logging setup --level INFO
+persistence setup --provider HIBERNATE --database MYSQL --persistenceUnit algorithms --userName rajiv --password password --hostName localhost --databaseName algorithms
+
+enum type --class ~.DataType
+enum constant --name BOOLEAN --class ~.DataType --permitReservedWords 
+enum constant --name LONG --class ~.DataType --permitReservedWords 
+enum constant --name DOUBLE --class ~.DataType --permitReservedWords 
+enum constant --name STRING --class ~.DataType --permitReservedWords 
+
+enum type --class ~.DataFormat --permitReservedWords 
+enum constant --name TXT_CSV --class ~.DataFormat --permitReservedWords 
+
+enum type --class ~.JobStatus --permitReservedWords 
+enum constant --name QUEUED --class ~.JobStatus --permitReservedWords 
+enum constant --name STARTED --class ~.JobStatus --permitReservedWords 
+enum constant --name FINISHED --class ~.JobStatus --permitReservedWords 
+enum constant --name CANCELLED --class ~.JobStatus --permitReservedWords 
+enum constant --name FAILED --class ~.JobStatus --permitReservedWords 
+
+enum type --class ~.Permission --permitReservedWords 
+enum constant --name READ --class ~.Permission --permitReservedWords 
+enum constant --name WRITE --class ~.Permission --permitReservedWords 
+
+enum type --class ~.UserType --permitReservedWords 
+enum constant --name USER --class ~.UserType --permitReservedWords 
+enum constant --name GROUP --class ~.UserType --permitReservedWords 
+enum constant --name OTHER --class ~.UserType --permitReservedWords 
+
+entity jpa --class ~.Entity --abstract --identifierField id  --inheritanceType TABLE_PER_CLASS
+field string --fieldName name 
+field string --fieldName description
+field date --fieldName createTime --type java.util.Date
+
+entity jpa --class ~.Field --extends ~.Entity --testAutomatically
+field enum --fieldName dataType --type ~.DataType
+
+entity jpa --class ~.DataSet --extends ~.Entity --testAutomatically
+field number --fieldName size --type long --permitReservedWords 
+field enum --fieldName format --type ~.DataFormat
+
+entity jpa --class ~.Algorithm --extends ~.Entity --testAutomatically
+
+entity jpa --class ~.Job --extends ~.Entity --testAutomatically
+field enum --fieldName status --type ~.JobStatus
+
+entity jpa --class ~.User --extends ~.Entity --table user_table --testAutomatically --permitReservedWords
+
+entity jpa --class ~.Group --extends ~.Entity --table group_table --testAutomatically --permitReservedWords
+
+entity jpa --class ~.Permissions --extends ~.Entity --table permissions_table --testAutomatically
+
+field reference --class ~.Entity --fieldName parentGroup --type ~.Group
+field reference --class ~.Entity --fieldName owner --type ~.User
+field reference --class ~.Entity --fieldName ownerGroup --type ~.Group
+field reference --class ~.Entity --fieldName permissions --type ~.Permissions
+
+# Relationship between Owners, Groups and Permissions
+
+# Relationship between DataSet and Field
+# field set --fieldName fields --class ~.DataSet --type ~.Field --cardinality MANY_TO_ONE
+# field reference --fieldName dataSet --class ~.Field --type ~.DataSet --notNull --permitReservedWords
+
+# service --interface ~.service.v1.DataSetService --entity ~.DataSet
+# service --interface ~.service.v1.FieldService --entity ~.Field
+# json all
+
+# web mvc setup
+# web mvc all --package ~.controller

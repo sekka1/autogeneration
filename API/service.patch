@@ -1,0 +1,676 @@
+diff -X ../diff.exclude -rupN api.bak/pom.xml ../../API/pom.xml
+--- api.bak/pom.xml	2012-04-16 22:31:58.775981714 -0700
++++ ../../API/pom.xml	2012-04-06 15:56:43.119911219 -0700
+@@ -4,7 +4,7 @@
+     <groupId>io.algorithms</groupId>
+     <artifactId>service</artifactId>
+     <packaging>war</packaging>
+-    <version>0.1.0.BUILD-SNAPSHOT</version>
++    <version>0.1.0</version>
+     <name>service</name>
+     <properties>
+         <aspectj.version>1.6.12</aspectj.version>
+@@ -171,11 +171,39 @@
+             <groupId>com.sun.jersey.contribs</groupId>
+             <artifactId>jersey-spring</artifactId>
+             <version>1.8</version>
++            <exclusions>
++                <exclusion>
++                    <groupId>org.springframework</groupId>
++                    <artifactId>spring</artifactId>
++                </exclusion>
++                <exclusion>
++                    <groupId>org.springframework</groupId>
++                    <artifactId>spring-core</artifactId>
++                </exclusion>
++                <exclusion>
++                    <groupId>org.springframework</groupId>
++                    <artifactId>spring-web</artifactId>
++                </exclusion>
++                <exclusion>
++                    <groupId>org.springframework</groupId>
++                    <artifactId>spring-beans</artifactId>
++                </exclusion>
++                <exclusion>
++                    <groupId>org.springframework</groupId>
++                    <artifactId>spring-context</artifactId>
++                </exclusion>
++            </exclusions>
+         </dependency>
+     <dependency>
+             <groupId>org.springframework</groupId>
+             <artifactId>spring-web</artifactId>
+             <version>${spring.version}</version>
++            <exclusions>
++                <exclusion>
++                    <groupId>commons-logging</groupId>
++                    <artifactId>commons-logging</artifactId>
++                </exclusion>
++            </exclusions>
+         </dependency>
+     <dependency>
+             <groupId>mysql</groupId>
+@@ -405,11 +433,6 @@
+                 <groupId>org.mortbay.jetty</groupId>
+                 <artifactId>jetty-maven-plugin</artifactId>
+                 <version>8.0.1.v20110908</version>
+-                <configuration>
+-                    <webAppConfig>
+-                        <contextPath>/${project.name}</contextPath>
+-                    </webAppConfig>
+-                </configuration>
+             </plugin>
+         </plugins>
+     </build>
+diff -X ../diff.exclude -rupN api.bak/src/main/java/io/algorithms/api/startup/Startup.java ../../API/src/main/java/io/algorithms/api/startup/Startup.java
+--- api.bak/src/main/java/io/algorithms/api/startup/Startup.java	1969-12-31 16:00:00.000000000 -0800
++++ ../../API/src/main/java/io/algorithms/api/startup/Startup.java	2012-04-16 22:18:06.615997332 -0700
+@@ -0,0 +1,26 @@
++/*
++* Copyright 2012 Algorithms.io. All Rights Reserved.
++* $Author: rajiv$
++* $Date: Apr 16, 2012$
++*/
++package io.algorithms.api.startup;
++
++import javax.servlet.ServletConfig;
++import javax.servlet.ServletException;
++import javax.servlet.http.HttpServlet;
++
++/**
++ * Perform startup functions.
++ */
++public class Startup extends HttpServlet {
++    private static final long serialVersionUID = 1L;
++
++    /* (non-Javadoc)
++     * @see javax.servlet.GenericServlet#init(javax.servlet.ServletConfig)
++     */
++    @Override
++    public void init(ServletConfig config) throws ServletException {
++        super.init(config);
++    }
++    
++}
+diff -X ../diff.exclude -rupN api.bak/src/main/java/io/algorithms/api/v1/AlgorithmService.java ../../API/src/main/java/io/algorithms/api/v1/AlgorithmService.java
+--- api.bak/src/main/java/io/algorithms/api/v1/AlgorithmService.java	1969-12-31 16:00:00.000000000 -0800
++++ ../../API/src/main/java/io/algorithms/api/v1/AlgorithmService.java	2012-04-06 15:56:43.143911218 -0700
+@@ -0,0 +1,93 @@
++/*
++* Copyright 2012 Algorithms.io. All Rights Reserved.
++* $Author: rajiv$
++* $Date: Feb 22, 2012$
++*/
++package io.algorithms.api.v1;
++
++import io.algorithms.entity.Algorithm;
++
++import java.util.List;
++
++import javax.ws.rs.Consumes;
++import javax.ws.rs.DELETE;
++import javax.ws.rs.GET;
++import javax.ws.rs.POST;
++import javax.ws.rs.PUT;
++import javax.ws.rs.Path;
++import javax.ws.rs.PathParam;
++import javax.ws.rs.Produces;
++import javax.ws.rs.core.MediaType;
++import javax.xml.bind.annotation.XmlElementWrapper;
++
++import org.springframework.stereotype.Service;
++
++/**
++ * Data set Service
++ */
++@Service
++@Path("/v1/algorithms")
++@Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
++@Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
++public class AlgorithmService {
++    /**
++     * Gets all algorithms.
++     * @return List of all algorithm descriptions
++     */
++    @GET
++    @XmlElementWrapper(name="algorithms")
++    public List<Algorithm> getAlgorithms() {
++        return Algorithm.findAllAlgorithms();
++    }
++    
++    /**
++     * Creates a new algorithm.
++     * @param algorithm details of algorithm to be created
++     * @return Response with link to newly created alogrithm
++     */
++    @POST
++    public Algorithm createAlgorithm(Algorithm algorithm) {
++        // null out all ids, since we want to create a new entity
++        algorithm.setId(null);
++
++        algorithm.persist();
++        return algorithm;
++    }
++
++    /**
++     * Get algorithm by id.
++     * @param id ID of algorithm to be fetched
++     * @return algorithm
++     */
++    @GET
++    @Path("{id}")
++    public Algorithm getAlgorithm(@PathParam("id") long id) {
++        return Algorithm.findAlgorithm(id);
++    }
++
++    /**
++     * Update an algorithm.
++     * @param is
++     * @return Response
++     */
++    @PUT
++    @Path("{id}")
++    public Algorithm updateAlgorithm(Algorithm algorithm) {
++        algorithm.merge();
++        return algorithm;
++    }
++
++    /**
++     * Delete given algorithm.
++     * @param id id of algorithm to be deleted
++     * @return
++     */
++    @DELETE
++    @Path("{id}")
++    public void deleteAlgorithm(@PathParam("id") long id) {
++        Algorithm algorithm = getAlgorithm(id);
++        if (algorithm != null) {
++            algorithm.remove();
++        }
++    }
++}
+diff -X ../diff.exclude -rupN api.bak/src/main/java/io/algorithms/api/v1/DataSetService.java ../../API/src/main/java/io/algorithms/api/v1/DataSetService.java
+--- api.bak/src/main/java/io/algorithms/api/v1/DataSetService.java	1969-12-31 16:00:00.000000000 -0800
++++ ../../API/src/main/java/io/algorithms/api/v1/DataSetService.java	2012-04-16 16:13:39.671608914 -0700
+@@ -0,0 +1,120 @@
++/*
++* Copyright 2012 Algorithms.io. All Rights Reserved.
++* $Author: rajiv$
++* $Date: Feb 22, 2012$
++*/
++package io.algorithms.api.v1;
++
++import io.algorithms.entity.DataSet;
++import io.algorithms.entity.Field;
++
++import java.util.List;
++
++import javax.ws.rs.Consumes;
++import javax.ws.rs.DELETE;
++import javax.ws.rs.GET;
++import javax.ws.rs.HeaderParam;
++import javax.ws.rs.POST;
++import javax.ws.rs.PUT;
++import javax.ws.rs.Path;
++import javax.ws.rs.PathParam;
++import javax.ws.rs.Produces;
++import javax.ws.rs.core.MediaType;
++import javax.xml.bind.annotation.XmlElementWrapper;
++
++import org.springframework.stereotype.Service;
++
++/**
++ * Data set Service
++ */
++@Service
++@Path("/v1/datasets")
++@Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
++@Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
++public class DataSetService {
++    
++    /**
++     * Gets all datasets in the given path.
++     * @param authToken
++     * @param path
++     * @return List of all dataset descriptions
++     */
++    @GET
++    @Path("{path}")
++    @XmlElementWrapper(name="datasets")
++    public List<DataSet> getDataSets(
++            @HeaderParam("Authorization") String authToken,
++            @PathParam("path") String path) {
++        return DataSet.findAllDataSets();
++    }
++    
++    /**
++     * Creates a new data set.
++     * @param authToken
++     * @param path
++     * @param dataSet details of Dataset to be created
++     * @return Response with link to newly created dataset
++     */
++    @POST
++    @Path("{path}")
++    public DataSet createDataSet(
++            @HeaderParam("Authorization") String authToken,
++            @PathParam("path") String path,
++            DataSet dataSet) {
++    
++        // null out all ids, since we want to create a new entity
++        dataSet.setId(null);
++        List<Field> fields = dataSet.getFields();
++        if (fields != null) {
++            for (Field field : fields) {
++                field.setId(null);
++            }
++        }
++
++        dataSet.persist();
++        return dataSet;
++    }
++
++    /**
++     * Get data set by id.
++     * @param id ID of data set to be fetched
++     * @return Data set description
++     */
++    @GET
++    @Path("{id : \\d+}")
++    public DataSet getDataSet(
++            @HeaderParam("Authorization") String authToken,
++            @PathParam("id") long id) {
++        return DataSet.findDataSet(id);
++    }
++
++    /**
++     * Updates a data set.
++     * @param is
++     * @return Response
++     */
++    @PUT
++    @Path("{id : \\d+}")
++    public DataSet updateDataSet(
++            @HeaderParam("Authorization") String authToken,
++            DataSet dataSet) {
++        dataSet.merge();
++        return dataSet;
++    }
++
++    /**
++     * Delete given data set.
++     * @param id id of data set to be deleted
++     * @return
++     */
++    @DELETE
++    @Path("{id : \\d+}")
++    public void deleteDataSet(
++            @HeaderParam("Authorization") String authToken,
++            @PathParam("id") long id) {
++        DataSet dataSet = getDataSet(authToken, id);
++        if (dataSet != null) {
++            dataSet.remove();
++        }
++    }
++}
+diff -X ../diff.exclude -rupN api.bak/src/main/java/io/algorithms/datastores/AwsCredentials.properties ../../API/src/main/java/io/algorithms/datastores/AwsCredentials.properties
+--- api.bak/src/main/java/io/algorithms/datastores/AwsCredentials.properties	1969-12-31 16:00:00.000000000 -0800
++++ ../../API/src/main/java/io/algorithms/datastores/AwsCredentials.properties	2012-04-16 21:31:54.931930386 -0700
+@@ -0,0 +1,4 @@
++# Fill in your AWS Access Key ID and Secret Access Key
++# http://aws.amazon.com/security-credentials
++accessKey = AKIAJO6OOIFG3LCMZPGA
++secretKey = sQNUF++7eFhh8JIlTNgUnKKx3HdOhRmN+V7pto5F
+diff -X ../diff.exclude -rupN api.bak/src/main/java/io/algorithms/datastores/DataStore.java ../../API/src/main/java/io/algorithms/datastores/DataStore.java
+--- api.bak/src/main/java/io/algorithms/datastores/DataStore.java	1969-12-31 16:00:00.000000000 -0800
++++ ../../API/src/main/java/io/algorithms/datastores/DataStore.java	2012-04-16 21:31:54.931930386 -0700
+@@ -0,0 +1,67 @@
++package io.algorithms.datastores;
++
++import java.io.BufferedReader;
++import java.io.File;
++import java.io.FileOutputStream;
++import java.io.IOException;
++import java.io.InputStream;
++import java.io.InputStreamReader;
++import java.io.OutputStreamWriter;
++import java.io.Writer;
++import java.util.UUID;
++
++import com.amazonaws.AmazonClientException;
++import com.amazonaws.AmazonServiceException;
++import com.amazonaws.auth.PropertiesCredentials;
++import com.amazonaws.services.s3.AmazonS3;
++import com.amazonaws.services.s3.AmazonS3Client;
++import com.amazonaws.services.s3.model.GetObjectRequest;
++import com.amazonaws.services.s3.model.ListObjectsRequest;
++import com.amazonaws.services.s3.model.PutObjectRequest;
++import com.amazonaws.services.s3.model.Bucket;
++import com.amazonaws.services.s3.model.S3Object;
++import com.amazonaws.services.s3.model.ObjectListing;
++import com.amazonaws.services.s3.model.S3ObjectSummary;
++import com.amazonaws.services.s3.model.PutObjectResult;
++
++public class DataStore {
++
++    private AmazonS3 s3;
++
++    public DataStore() throws IOException {
++
++        // Create Amazon S3 Object
++        this.s3 = new AmazonS3Client(new PropertiesCredentials(
++                DataStore.class.getResourceAsStream("AwsCredentials.properties")));
++
++    }
++
++    public String put( String bucketName, String key, File aFile ) throws IOException {  
++
++        // The MD5 hash of the file after it is on S3
++        String eTag = null;
++
++        try {
++            // Upload file
++            PutObjectResult putObjectResults = this.s3.putObject(new PutObjectRequest(bucketName, key, aFile));
++
++            eTag = putObjectResults.getETag();
++
++        } catch (AmazonServiceException ase) {
++            System.out.println("Caught an AmazonServiceException, which means your request made it "
++                    + "to Amazon S3, but was rejected with an error response for some reason.");
++            System.out.println("Error Message:    " + ase.getMessage());
++            System.out.println("HTTP Status Code: " + ase.getStatusCode());
++            System.out.println("AWS Error Code:   " + ase.getErrorCode());
++            System.out.println("Error Type:       " + ase.getErrorType());
++            System.out.println("Request ID:       " + ase.getRequestId());
++        } catch (AmazonClientException ace) {
++            System.out.println("Caught an AmazonClientException, which means the client encountered "
++                    + "a serious internal problem while trying to communicate with S3, "
++                    + "such as not being able to access the network.");
++            System.out.println("Error Message: " + ace.getMessage());
++        }
++
++        return eTag;
++    }
++}
+diff -X ../diff.exclude -rupN api.bak/src/main/java/io/algorithms/security/AuthManager.java ../../API/src/main/java/io/algorithms/security/AuthManager.java
+--- api.bak/src/main/java/io/algorithms/security/AuthManager.java	1969-12-31 16:00:00.000000000 -0800
++++ ../../API/src/main/java/io/algorithms/security/AuthManager.java	2012-04-16 22:17:32.739997970 -0700
+@@ -0,0 +1,13 @@
++/*
++* Copyright 2012 Algorithms.io. All Rights Reserved.
++* $Author: rajiv$
++* $Date: Apr 16, 2012$
++*/
++package io.algorithms.security;
++
++/**
++ * Collection of methods relating to Authentication & Authorization.
++ */
++public final class AuthManager {
++
++}
+diff -X ../diff.exclude -rupN api.bak/src/main/java/io/algorithms/security/SecurityAspect.aj ../../API/src/main/java/io/algorithms/security/SecurityAspect.aj
+--- api.bak/src/main/java/io/algorithms/security/SecurityAspect.aj	1969-12-31 16:00:00.000000000 -0800
++++ ../../API/src/main/java/io/algorithms/security/SecurityAspect.aj	2012-04-16 22:17:14.947998304 -0700
+@@ -0,0 +1,205 @@
++/*
++* Copyright 2012 Algorithms.io. All Rights Reserved.
++* $Author: rajiv$
++* $Date: Apr 16, 2012$
++*/
++package io.algorithms.security;
++
++import io.algorithms.entity.Entity;
++import io.algorithms.entity.Group;
++import io.algorithms.entity.Permission;
++import io.algorithms.entity.User;
++
++import javax.ws.rs.WebApplicationException;
++import javax.ws.rs.core.Response.Status;
++
++/**
++ * Controls security across all services.
++ */
++public aspect SecurityAspect {
++    /**
++     * All service methods: Class name ends with Service and the method is public.
++     */
++    pointcut serviceMethods():
++        within(*Service)
++        && execution(public * *( .. ));
++    
++    /**
++     * All authenticated service methods: First arg is a string (supposedly auth token)
++     * @param authToken
++     */
++    pointcut authenticatedServiceMethods(String authToken):
++        serviceMethods()
++        && args(authToken, ..);
++    
++    /**
++     * Get resource method: begins with get
++     * @param authToken
++     * @param id
++     */
++    pointcut readGroup(String authToken, String path):
++        authenticatedServiceMethods(authToken)
++        && args(.. , path)
++        && execution(public * get*( .. ));
++
++    /**
++     * Get resource method: begins with get
++     * @param authToken
++     * @param id
++     */
++    pointcut readResource(String authToken, Long id):
++        authenticatedServiceMethods(authToken)
++        && args(.. , id)
++        && execution(public * get*( .. ));
++
++    /**
++     * Create resource method: begins with create
++     * @param authToken
++     * @param id
++     */
++    pointcut createResource(String authToken, String path, Entity entity):
++        authenticatedServiceMethods(authToken)
++        && args(.. , path, entity)
++        && execution(public * create*( .. ));
++
++    /**
++     * Update resource method: begins upgrade
++     * @param authToken
++     * @param entity
++     */
++    pointcut updateResource(String authToken, Entity entity):
++        authenticatedServiceMethods(authToken)
++        && args(.., entity)
++        && execution(public * update*( .. ));
++        
++    /**
++     * Delete resource method: begins with delete
++     * @param authToken
++     * @param entity
++     */
++    pointcut deleteResource(String authToken, Long id):
++        authenticatedServiceMethods(authToken)
++        && args(.., id)
++        && execution(public * delete*( .. ));
++        
++    
++    /**
++     * Just to be safe, we will throw unauthorized exception for all methods
++     * that don't have the authToken as the first argument.
++     */
++    before(): serviceMethods() && !authenticatedServiceMethods(String) {
++        throw new WebApplicationException(Status.UNAUTHORIZED);
++    }
++    
++    /**
++     * Read a folder.
++     * @param authToken
++     */
++    before(String authToken, String path): readGroup(authToken, path) {
++        User user = getUserForAuthToken(authToken);
++        Group group = getGroupForPath(path);
++        System.out.println("User: " + user + " is trying to read " + group);
++        if (!canRead(user, group)) {
++            throw new WebApplicationException(Status.UNAUTHORIZED);
++        }
++    }
++    
++    /**
++     * Read a resource.
++     * @param authToken
++     */
++    before(String authToken, Long id): readResource(authToken, id) {
++        User user = getUserForAuthToken(authToken);
++        Entity entity = Entity.findEntity(id);
++        System.out.println("User: " + user + " is trying to read " + entity);
++        if (!canRead(user, entity)) {
++            throw new WebApplicationException(Status.UNAUTHORIZED);
++        }
++    }
++    
++    /**
++     * Update or delete resource.
++     * @param authToken
++     */
++    before(String authToken, Entity entity): updateResource(authToken, entity) {
++        User user = getUserForAuthToken(authToken);
++        System.out.println("User: " + user + " is trying to write to " + entity);
++        if (!canWrite(user, entity)) {
++            throw new WebApplicationException(Status.UNAUTHORIZED);
++        }
++    }
++    
++    /**
++     * Read a resource.
++     * @param authToken
++     */
++    before(String authToken, Long id): deleteResource(authToken, id) {
++        User user = getUserForAuthToken(authToken);
++        Entity entity = Entity.findEntity(id);
++        System.out.println("User: " + user + " is trying to read " + entity);
++        if (!canWrite(user, entity)) {
++            throw new WebApplicationException(Status.UNAUTHORIZED);
++        }
++    }
++    
++    /**
++     * For methods that do have authToken as the first argument,
++     * We will validate it first. If valid, we will pull up the corresponding user
++     * and set him/her as the this thread's 'subject'
++     * @param authToken
++     */
++    before(String authToken, String path, Entity entity): createResource(authToken, path, entity) {
++        User user = getUserForAuthToken(authToken);
++        Group group = getGroupForPath(path);
++        System.out.println("User: " + user + " is trying to create a resource in " + group);
++        if (!canWrite(user, group)) {
++            throw new WebApplicationException(Status.UNAUTHORIZED);
++        }
++    }
++    
++    private static User getUserForAuthToken(String authToken) {
++        if (authToken == null) {
++            return null;
++        } // else if token is invalid, return null;
++        
++        User user = new User();
++        user.setName("root");
++        return user;
++    }
++    
++    private static Group getGroupForPath(String path) {
++        if (path == null) {
++            return null;
++        }
++        
++        Group group = new Group();
++        group.setName("root");
++        return group;
++    }
++    
++    private static boolean canRead(User user, Entity entity) {
++        return user != null && entity != null
++                && entity.getOwner() != null && entity.getOwnerGroup() != null && entity.getPermissions() != null
++                && entity.getPermissions().getOwnerPermissions() != null
++                && entity.getPermissions().getOwnerGroupPermissions() != null
++                && entity.getPermissions().getOthersPermissions() != null
++                && (entity.getOwner().equals(user)
++                        && entity.getPermissions().getOwnerPermissions().contains(Permission.READ)
++                    || entity.getOwnerGroup().equals(user.getParentGroup())
++                        && entity.getPermissions().getOwnerGroupPermissions().contains(Permission.READ)
++                    || entity.getPermissions().getOthersPermissions().contains(Permission.READ));
++    }
++    
++    private static boolean canWrite(User user, Entity entity) {
++        return user != null && entity != null
++                && entity.getOwner() != null && entity.getOwnerGroup() != null && entity.getPermissions() != null
++                && entity.getPermissions().getOwnerPermissions() != null
++                && entity.getPermissions().getOwnerGroupPermissions() != null
++                && entity.getPermissions().getOthersPermissions() != null
++                && (entity.getOwner().equals(user)
++                        && entity.getPermissions().getOwnerPermissions().contains(Permission.WRITE)
++                    || entity.getOwnerGroup().equals(user.getParentGroup())
++                        && entity.getPermissions().getOwnerGroupPermissions().contains(Permission.WRITE)
++                    || entity.getPermissions().getOthersPermissions().contains(Permission.WRITE));
++    }
++}
+diff -X ../diff.exclude -rupN api.bak/src/main/resources/META-INF/persistence.xml ../../API/src/main/resources/META-INF/persistence.xml
+--- api.bak/src/main/resources/META-INF/persistence.xml	2012-04-16 22:31:58.775981714 -0700
++++ ../../API/src/main/resources/META-INF/persistence.xml	1969-12-31 16:00:00.000000000 -0800
+@@ -1,16 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+-<persistence xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.0" xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd">
+-<persistence-unit name="algorithms" transaction-type="RESOURCE_LOCAL">
+-        <provider>org.hibernate.ejb.HibernatePersistence</provider>
+-        <properties>
+-            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL5InnoDBDialect"/>
+-            <!-- value="create" to build a new database on each run; value="update" to modify an existing database; value="create-drop" means the same as "create" but also drops tables when Hibernate closes; value="validate" makes no changes to the database -->
+-            <property name="hibernate.hbm2ddl.auto" value="create"/>
+-            <property name="hibernate.ejb.naming_strategy" value="org.hibernate.cfg.ImprovedNamingStrategy"/>
+-            <property name="hibernate.connection.charSet" value="UTF-8"/>
+-            <!-- Uncomment the following two properties for JBoss only -->
+-            <!-- property name="hibernate.validator.apply_to_ddl" value="false" /-->
+-            <!-- property name="hibernate.validator.autoregister_listeners" value="false" /-->
+-        </properties>
+-    </persistence-unit>
+-</persistence>
+diff -X ../diff.exclude -rupN api.bak/src/main/webapp/WEB-INF/web.xml ../../API/src/main/webapp/WEB-INF/web.xml
+--- api.bak/src/main/webapp/WEB-INF/web.xml	1969-12-31 16:00:00.000000000 -0800
++++ ../../API/src/main/webapp/WEB-INF/web.xml	2012-04-06 15:56:43.151911218 -0700
+@@ -0,0 +1,32 @@
++<web-app>
++    <!-- Creates the Spring Container shared by all Servlets and Filters -->
++    <listener>
++        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
++    </listener>
++    <context-param>
++        <param-name>contextConfigLocation</param-name>
++        <param-value>classpath*:META-INF/spring/applicationContext*.xml</param-value>
++    </context-param>
++    <!-- Ensure a Hibernate Session is available to avoid lazy init issues -->
++    <filter>
++        <filter-name>Spring OpenEntityManagerInViewFilter</filter-name>
++        <filter-class>org.springframework.orm.jpa.support.OpenEntityManagerInViewFilter</filter-class>
++    </filter>
++    <filter-mapping>
++        <filter-name>Spring OpenEntityManagerInViewFilter</filter-name>
++        <url-pattern>/*</url-pattern>
++    </filter-mapping>
++    <!-- Handles Jersey requests -->
++    <servlet>
++        <servlet-name>Jersey Spring Web Application</servlet-name>
++        <servlet-class>com.sun.jersey.spi.spring.container.servlet.SpringServlet</servlet-class>
++        <init-param>
++              <param-name>com.sun.jersey.config.property.packages</param-name>
++                <param-value>io.algorithms.api.v1</param-value>
++            </init-param>
++    </servlet>
++    <servlet-mapping>
++        <servlet-name>Jersey Spring Web Application</servlet-name>
++        <url-pattern>/rest/*</url-pattern>
++    </servlet-mapping>
++</web-app>

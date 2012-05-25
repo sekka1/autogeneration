@@ -1,0 +1,410 @@
+diff -X ../diff.exclude -rupN entity.bak/pom.xml ../../Algorithms.io.main/modules/entity/pom.xml
+--- entity.bak/pom.xml	2012-04-16 13:06:31.859819650 -0700
++++ ../../Algorithms.io.main/modules/entity/pom.xml	2012-04-16 10:35:18.351989951 -0700
+@@ -1,10 +1,10 @@
+ <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+ <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+     <modelVersion>4.0.0</modelVersion>
+-    <groupId>io.algorithms.entity</groupId>
++    <groupId>io.algorithms</groupId>
+     <artifactId>entity</artifactId>
+     <packaging>jar</packaging>
+-    <version>0.1.0.BUILD-SNAPSHOT</version>
++    <version>0.1.0</version>
+     <name>entity</name>
+     <properties>
+         <aspectj.version>1.6.12</aspectj.version>
+@@ -278,6 +284,8 @@
+                     </execution>
+                 </executions>
+                 <configuration>
++                    <!-- <showWeaveInfo>true</showWeaveInfo>
++                    <XnoInline>true</XnoInline> -->
+                     <outxml>true</outxml>
+                     <aspectLibraries>
+                         <aspectLibrary>
+diff -X ../diff.exclude -rupN entity.bak/src/main/java/io/algorithms/datastore/amazon/AmazonDataStore.java ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/datastore/amazon/AmazonDataStore.java
+--- entity.bak/src/main/java/io/algorithms/datastore/amazon/AmazonDataStore.java	1969-12-31 16:00:00.000000000 -0800
++++ ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/datastore/amazon/AmazonDataStore.java	2012-04-16 10:40:58.855983560 -0700
+@@ -0,0 +1,39 @@
++/*
++* Copyright 2012 Algorithms.io. All Rights Reserved.
++* $Author: rajiv$
++* $Date: Apr 16, 2012$
++*/
++package io.algorithms.datastore.amazon;
++
++import io.algorithms.datastore.DataStore;
++import java.io.InputStream;
++import java.io.OutputStream;
++
++import com.amazonaws.services.s3.AmazonS3;
++
++/**
++ * DataStore implementation for Amazon.
++ */
++public class AmazonDataStore implements DataStore {
++    
++    private AmazonS3 s3;
++    
++    /* (non-Javadoc)
++     * @see io.algorithms.datastore.DataStore#put(java.lang.Long, io.algorithms.datastore.InputStream)
++     */
++    @Override
++    public void put(Long id, InputStream inputStream) {
++        // TODO Auto-generated method stub
++        
++    }
++
++    /* (non-Javadoc)
++     * @see io.algorithms.datastore.DataStore#get(java.lang.Long)
++     */
++    @Override
++    public OutputStream get(Long id) {
++        // TODO Auto-generated method stub
++        return null;
++    }
++
++}
+diff -X ../diff.exclude -rupN entity.bak/src/main/java/io/algorithms/datastore/DataStore.java ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/datastore/DataStore.java
+--- entity.bak/src/main/java/io/algorithms/datastore/DataStore.java	1969-12-31 16:00:00.000000000 -0800
++++ ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/datastore/DataStore.java	2012-04-16 10:25:43.460000741 -0700
+@@ -0,0 +1,28 @@
++/*
++* Copyright 2012 Algorithms.io. All Rights Reserved.
++* $Author: rajiv$
++* $Date: Feb 22, 2012$
++*/
++package io.algorithms.datastore;
++
++import java.io.InputStream;
++import java.io.OutputStream;
++
++/**
++ * Interface to abstract different stores.
++ */
++public interface DataStore {
++    /**
++     * Puts a file into a store.
++     * @param id
++     * @param inputStream
++     */
++    void put(Long id, InputStream inputStream);
++    
++    /**
++     * Gets the output stream corresponding to a dataset id.
++     * @param id
++     * @return
++     */
++    OutputStream get(Long id);
++}
+diff -X ../diff.exclude -rupN entity.bak/src/main/java/io/algorithms/entity/Algorithm.java ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/Algorithm.java
+--- entity.bak/src/main/java/io/algorithms/entity/Algorithm.java	2012-04-16 13:06:35.611819580 -0700
++++ ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/Algorithm.java	2012-04-11 19:45:01.027809134 -0700
+@@ -1,5 +1,13 @@
+ package io.algorithms.entity;
+ 
++import java.util.List;
++
++import javax.persistence.CascadeType;
++import javax.persistence.ElementCollection;
++import javax.persistence.OneToMany;
++import javax.persistence.OrderColumn;
++import javax.xml.bind.annotation.XmlRootElement;
++
+ import org.springframework.roo.addon.javabean.RooJavaBean;
+ import org.springframework.roo.addon.jpa.activerecord.RooJpaActiveRecord;
+ import org.springframework.roo.addon.tostring.RooToString;
+@@ -7,5 +15,20 @@ import org.springframework.roo.addon.tos
+ @RooJavaBean
+ @RooToString
+ @RooJpaActiveRecord
++@XmlRootElement
+ public class Algorithm extends Entity {
++    @ElementCollection(targetClass=String.class)
++    @OrderColumn
++    List<String> categories;
++
++    @ElementCollection(targetClass=DataSet.class)
++    @OneToMany(cascade=CascadeType.ALL)
++    @OrderColumn
++    private List<DataSet> inputDataSets;
++
++    @ElementCollection(targetClass=DataSet.class)
++    @OneToMany(cascade=CascadeType.ALL)
++    @OrderColumn
++    private List<DataSet> outputDataSets;
++
+ }
+diff -X ../diff.exclude -rupN entity.bak/src/main/java/io/algorithms/entity/DataSet.java ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/DataSet.java
+--- entity.bak/src/main/java/io/algorithms/entity/DataSet.java	2012-04-16 13:06:35.351819585 -0700
++++ ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/DataSet.java	2012-04-16 11:47:30.535908641 -0700
+@@ -1,6 +1,21 @@
+ package io.algorithms.entity;
+ 
++import io.algorithms.datastore.DataStore;
++
++import java.io.InputStream;
++import java.io.OutputStream;
++import java.util.List;
++
++import javax.persistence.CascadeType;
++import javax.persistence.ElementCollection;
++import javax.persistence.EnumType;
+ import javax.persistence.Enumerated;
++import javax.persistence.OneToMany;
++import javax.persistence.OrderColumn;
++import javax.persistence.Transient;
++import javax.xml.bind.annotation.XmlRootElement;
++import javax.xml.bind.annotation.XmlTransient;
++
+ import org.springframework.roo.addon.javabean.RooJavaBean;
+ import org.springframework.roo.addon.jpa.activerecord.RooJpaActiveRecord;
+ import org.springframework.roo.addon.tostring.RooToString;
+@@ -8,10 +23,28 @@ import org.springframework.roo.addon.tos
+ @RooJavaBean
+ @RooToString
+ @RooJpaActiveRecord
++@XmlRootElement
+ public class DataSet extends Entity {
+ 
+     private long size;
+ 
+-    @Enumerated
++    @Enumerated(EnumType.STRING)
+     private DataFormat format;
++
++    @ElementCollection(targetClass=Field.class)
++    @OneToMany(cascade=CascadeType.ALL)
++    @OrderColumn
++    private List<Field> fields;
++//
++//    @XmlTransient
++//    @Transient
++//    private DataStore fileStore;
++//    
++//    public OutputStream getData() {
++//        return fileStore.get(getId());
++//    }
++//    
++//    public void putData(InputStream inputStream) {
++//        fileStore.put(getId(), inputStream);
++//    }
+ }
+diff -X ../diff.exclude -rupN entity.bak/src/main/java/io/algorithms/entity/Entity.java ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/Entity.java
+--- entity.bak/src/main/java/io/algorithms/entity/Entity.java	2012-04-16 13:06:38.579819524 -0700
++++ ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/Entity.java	2012-04-16 11:43:03.971913644 -0700
+@@ -1,9 +1,17 @@
+ package io.algorithms.entity;
+ 
+ import java.util.Date;
++
++import javax.persistence.Column;
++import javax.persistence.GeneratedValue;
++import javax.persistence.GenerationType;
++import javax.persistence.Id;
++import javax.persistence.JoinColumn;
+ import javax.persistence.ManyToOne;
+ import javax.persistence.Temporal;
+ import javax.persistence.TemporalType;
++import javax.xml.bind.annotation.XmlTransient;
++
+ import org.springframework.format.annotation.DateTimeFormat;
+ import org.springframework.roo.addon.javabean.RooJavaBean;
+ import org.springframework.roo.addon.jpa.activerecord.RooJpaActiveRecord;
+@@ -14,6 +22,11 @@ import org.springframework.roo.addon.tos
+ @RooJpaActiveRecord(identifierField = "id", inheritanceType = "TABLE_PER_CLASS")
+ public abstract class Entity {
+ 
++    @Id
++    @GeneratedValue(strategy = GenerationType.TABLE)
++    @Column(name = "id")
++    private Long id;
++    
+     private String name;
+ 
+     private String description;
+@@ -23,6 +36,7 @@ public abstract class Entity {
+     private Date createTime;
+ 
+     @ManyToOne
++    @JoinColumn()
+     private Group parentGroup;
+ 
+     @ManyToOne
+@@ -33,4 +47,13 @@ public abstract class Entity {
+ 
+     @ManyToOne
+     private Permissions permissions;
++
++    
++    public Long getId() {
++        return this.id;
++    }
++    
++    public void setId(Long id) {
++        this.id = id;
++    }
+ }
+diff -X ../diff.exclude -rupN entity.bak/src/main/java/io/algorithms/entity/Field.java ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/Field.java
+--- entity.bak/src/main/java/io/algorithms/entity/Field.java	2012-04-16 13:06:34.667819598 -0700
++++ ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/Field.java	2012-04-11 19:45:01.075809135 -0700
+@@ -1,6 +1,11 @@
+ package io.algorithms.entity;
+ 
++import javax.persistence.EnumType;
+ import javax.persistence.Enumerated;
++import javax.xml.bind.annotation.XmlAccessType;
++import javax.xml.bind.annotation.XmlAccessorType;
++import javax.xml.bind.annotation.XmlRootElement;
++
+ import org.springframework.roo.addon.javabean.RooJavaBean;
+ import org.springframework.roo.addon.jpa.activerecord.RooJpaActiveRecord;
+ import org.springframework.roo.addon.tostring.RooToString;
+@@ -8,8 +13,9 @@ import org.springframework.roo.addon.tos
+ @RooJavaBean
+ @RooToString
+ @RooJpaActiveRecord
++@XmlRootElement
+ public class Field extends Entity {
+ 
+-    @Enumerated
++    @Enumerated(EnumType.STRING)
+     private DataType dataType;
+ }
+diff -X ../diff.exclude -rupN entity.bak/src/main/java/io/algorithms/entity/Group.java ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/Group.java
+--- entity.bak/src/main/java/io/algorithms/entity/Group.java	2012-04-16 13:06:36.439819564 -0700
++++ ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/Group.java	2012-04-16 11:41:13.555915716 -0700
+@@ -1,5 +1,13 @@
+ package io.algorithms.entity;
+ 
++import java.util.List;
++
++import javax.persistence.CascadeType;
++import javax.persistence.ElementCollection;
++import javax.persistence.OneToMany;
++import javax.persistence.OrderColumn;
++import javax.xml.bind.annotation.XmlRootElement;
++
+ import org.springframework.roo.addon.javabean.RooJavaBean;
+ import org.springframework.roo.addon.jpa.activerecord.RooJpaActiveRecord;
+ import org.springframework.roo.addon.tostring.RooToString;
+@@ -7,5 +15,11 @@ import org.springframework.roo.addon.tos
+ @RooJavaBean
+ @RooToString
+ @RooJpaActiveRecord(table = "group_table")
++@XmlRootElement
+ public class Group extends Entity {
++    @ElementCollection(targetClass=Entity.class)
++    @OneToMany(cascade=CascadeType.ALL, mappedBy="parentGroup")
++    @OrderColumn
++    private List<Entity> children;
++
+ }
+diff -X ../diff.exclude -rupN entity.bak/src/main/java/io/algorithms/entity/Job.java ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/Job.java
+--- entity.bak/src/main/java/io/algorithms/entity/Job.java	2012-04-16 13:06:36.107819570 -0700
++++ ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/Job.java	2012-04-11 19:45:01.091809135 -0700
+@@ -1,6 +1,9 @@
+ package io.algorithms.entity;
+ 
++import javax.persistence.EnumType;
+ import javax.persistence.Enumerated;
++import javax.xml.bind.annotation.XmlRootElement;
++
+ import org.springframework.roo.addon.javabean.RooJavaBean;
+ import org.springframework.roo.addon.jpa.activerecord.RooJpaActiveRecord;
+ import org.springframework.roo.addon.tostring.RooToString;
+@@ -8,8 +11,9 @@ import org.springframework.roo.addon.tos
+ @RooJavaBean
+ @RooToString
+ @RooJpaActiveRecord
++@XmlRootElement
+ public class Job extends Entity {
+ 
+-    @Enumerated
++    @Enumerated(EnumType.STRING)
+     private JobStatus status;
+ }
+diff -X ../diff.exclude -rupN entity.bak/src/main/java/io/algorithms/entity/Permissions.java ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/Permissions.java
+--- entity.bak/src/main/java/io/algorithms/entity/Permissions.java	2012-04-16 13:06:36.651819560 -0700
++++ ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/Permissions.java	2012-04-11 19:45:01.091809135 -0700
+@@ -1,5 +1,13 @@
+ package io.algorithms.entity;
+ 
++import java.util.Set;
++
++import javax.persistence.CollectionTable;
++import javax.persistence.ElementCollection;
++import javax.persistence.EnumType;
++import javax.persistence.Enumerated;
++import javax.xml.bind.annotation.XmlRootElement;
++
+ import org.springframework.roo.addon.javabean.RooJavaBean;
+ import org.springframework.roo.addon.jpa.activerecord.RooJpaActiveRecord;
+ import org.springframework.roo.addon.tostring.RooToString;
+@@ -7,5 +15,21 @@ import org.springframework.roo.addon.tos
+ @RooJavaBean
+ @RooToString
+ @RooJpaActiveRecord(table = "permissions_table")
++@XmlRootElement
+ public class Permissions extends Entity {
++    @ElementCollection(targetClass=Permission.class)
++    @CollectionTable
++    @Enumerated(EnumType.STRING)
++    private Set<Permission> ownerPermissions;
++    
++    @ElementCollection(targetClass=Permission.class)
++    @CollectionTable
++    @Enumerated(EnumType.STRING)
++    private Set<Permission> ownerGroupPermissions;
++
++    @ElementCollection(targetClass=Permission.class)
++    @CollectionTable
++    @Enumerated(EnumType.STRING)
++    private Set<Permission> othersPermissions;
++
+ }
+diff -X ../diff.exclude -rupN entity.bak/src/main/java/io/algorithms/entity/User.java ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/User.java
+--- entity.bak/src/main/java/io/algorithms/entity/User.java	2012-04-16 13:06:36.235819568 -0700
++++ ../../Algorithms.io.main/modules/entity/src/main/java/io/algorithms/entity/User.java	2012-04-16 16:20:34.119601135 -0700
+@@ -1,5 +1,14 @@
+ package io.algorithms.entity;
+ 
++import java.util.List;
++
++import javax.persistence.CascadeType;
++import javax.persistence.ElementCollection;
++import javax.persistence.OneToMany;
++import javax.persistence.OrderColumn;
++import javax.xml.bind.annotation.XmlRootElement;
++import javax.xml.bind.annotation.XmlTransient;
++
+ import org.springframework.roo.addon.javabean.RooJavaBean;
+ import org.springframework.roo.addon.jpa.activerecord.RooJpaActiveRecord;
+ import org.springframework.roo.addon.tostring.RooToString;
+@@ -7,5 +16,16 @@ import org.springframework.roo.addon.tos
+ @RooJavaBean
+ @RooToString
+ @RooJpaActiveRecord(table = "user_table")
++@XmlRootElement
+ public class User extends Entity {
++
++    @ElementCollection(targetClass=Group.class)
++    @OneToMany(cascade=CascadeType.ALL)
++    @OrderColumn
++    private List<Group> groups;
++    
++    @ElementCollection(targetClass=String.class)
++    @OrderColumn
++    @XmlTransient
++    List<String> authTokens;
+ }
+diff -X ../diff.exclude -rupN entity.bak/src/main/resources/META-INF/spring/applicationContext.xml ../../Algorithms.io.main/modules/entity/src/main/resources/META-INF/spring/applicationContext.xml
+--- entity.bak/src/main/resources/META-INF/spring/applicationContext.xml	2012-04-16 13:06:31.855819650 -0700
++++ ../../Algorithms.io.main/modules/entity/src/main/resources/META-INF/spring/applicationContext.xml	2012-04-12 19:38:16.889537535 -0700
+@@ -68,4 +68,5 @@
+         <property name="persistenceUnitName" value="algorithms"/>
+         <property name="dataSource" ref="dataSource"/>
+     </bean>
++    <aop:aspectj-autoproxy/>
+ </beans>
